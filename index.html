@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>arj-chat</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fira+Code&display=swap" rel="stylesheet"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',sans-serif;background:#0a0a0a;color:#fff;height:100vh;overflow:hidden}
+input,textarea,button{font-family:'Inter',sans-serif}
+::-webkit-scrollbar{width:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:#333;border-radius:2px}
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes dot{0%,100%{opacity:.3;transform:scale(.8)}50%{opacity:1;transform:scale(1)}}
+@keyframes eyeglow{0%{filter:drop-shadow(0 0 10px #0af)drop-shadow(0 0 20px #05f)}100%{filter:drop-shadow(0 0 30px #0ef)drop-shadow(0 0 60px #08f)}}
+@keyframes badpulse{0%,100%{opacity:1}50%{opacity:.3}}
+@keyframes badblink{50%{opacity:0}}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const {useState,useEffect,useRef} = React;
+
+const USERS = [
+  {id:1,email:"arj@admin.com",name:"ARJ",password:"admin123",isAdmin:true},
+];
+
+function BadTimeScreen({onEnd}){
+  const [phase,setPhase]=useState(0);
+  useEffect(()=>{
+    const t=[
+      setTimeout(()=>setPhase(1),700),
+      setTimeout(()=>setPhase(2),2300),
+      setTimeout(()=>setPhase(3),3900),
+      setTimeout(()=>setPhase(4),5500),
+    ];
+    return()=>t.forEach(clearTimeout);
+  },[]);
+  return(
+    <div style={{position:"fixed",inset:0,zIndex:9999,background:"#000",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",fontFamily:"'Fira Code',monospace"}}>
+      <div style={{position:"fixed",inset:0,pointerEvents:"none",background:"repeating-linear-gradient(to bottom,transparent 0,transparent 3px,rgba(0,0,0,0.12) 3px,rgba(0,0,0,0.12) 4px)"}}/>
+      {phase>=3&&<div style={{position:"absolute",top:"10%",fontSize:100,animation:"eyeglow 1s ease-in-out infinite alternate"}}>👁</div>}
+      <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:28,zIndex:1}}>
+        {phase>=1&&<div style={{fontSize:72,color:"#fff",letterSpacing:10,textShadow:"0 0 30px #fff"}}>so.</div>}
+        {phase>=2&&<div style={{fontSize:28,textAlign:"center",lineHeight:2,maxWidth:480,padding:"0 20px",color:"#fff"}}>you really want to have<br/><span style={{color:"#f33",fontSize:52,textShadow:"0 0 20px #f00"}}>a bad time?</span></div>}
+        {phase>=4&&(
+          <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:16}}>
+            <div style={{fontSize:18,color:"#444",animation:"badblink 1s step-end infinite"}}>* ну ти сам вибрав.</div>
+            <button onClick={onEnd} style={{background:"#f33",color:"#fff",border:"none",fontFamily:"'Fira Code',monospace",fontSize:12,padding:"14px 32px",cursor:"pointer",letterSpacing:2,boxShadow:"0 0 24px #f00",animation:"badpulse 1s infinite"}}>▶ ПРОДОВЖИТИ</button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function AuthScreen({onLogin}){
+  const [mode,setMode]=useState("login");
+  const [email,setEmail]=useState("");
+  const [name,setName]=useState("");
+  const [password,setPassword]=useState("");
+  const [error,setError]=useState("");
+  const [loading,setLoading]=useState(false);
+
+  function submit(){
+    setError("");setLoading(true);
+    setTimeout(()=>{
+      if(mode==="login"){
+        const u=USERS.find(u=>u.email===email&&u.password===password);
+        if(u)onLogin(u);
+        else setError("Невірний email або пароль");
+      } else {
+        if(!name.trim()){setError("Введи ім'я");setLoading(false);return;}
+        if(!email.includes("@")){setError("Невірний email");setLoading(false);return;}
+        if(password.length<6){setError("Пароль мінімум 6 символів");setLoading(false);return;}
+        if(USERS.find(u=>u.email===email)){setError("Email вже зайнятий");setLoading(false);return;}
+        const nu={id:Date.now(),email,name,password,isAdmin:false};
+        USERS.push(nu);
+        onLogin(nu);
+      }
+      setLoading(false);
+    },600);
+  }
+
+  return(
+    <div style={{minHeight:"100vh",background:"#0a0a0a",display:"flex",alignItems:"center",justifyContent:"center",padding:24,position:"relative",overflow:"hidden"}}>
+      <div style={{position:"fixed",top:"20%",left:"50%",transform:"translateX(-50%)",width:600,height:600,borderRadius:"50%",background:"radial-gradient(circle,rgba(37,99,235,0.07) 0%,transparent 70%)",pointerEvents:"none"}}/>
+      <div style={{width:"100%",maxWidth:400,animation:"fadeUp .4s ease",zIndex:1}}>
+        <div style={{textAlign:"center",marginBottom:40}}>
+          <div style={{fontSize:34,fontWeight:700,letterSpacing:-1}}>arj<span style={{color:"#2563eb"}}>.</span>chat</div>
+          <div style={{fontSize:14,color:"#555",marginTop:8}}>{mode==="login"?"Увійди в акаунт":"Створи акаунт"}</div>
+        </div>
+        <div style={{background:"#111",border:"1px solid #1e1e1e",borderRadius:16,padding:28,display:"flex",flexDirection:"column",gap:16}}>
+          {mode==="register"&&(
+            <div style={{display:"flex",flexDirection:"column",gap:6}}>
+              <label style={{fontSize:13,color:"#666",fontWeight:500}}>Ім'я</label>
+              <input value={name} onChange={e=>setName(e.target.value)} placeholder="Твоє ім'я"
+                style={{background:"#1a1a1a",border:"1px solid #2a2a2a",borderRadius:10,color:"#fff",fontSize:15,padding:"11px 14px",outline:"none",width:"100%"}}/>
+            </div>
+          )}
+          <div style={{display:"flex",flexDirection:"column",gap:6}}>
+            <label style={{fontSize:13,color:"#666",fontWeight:500}}>Email</label>
+            <input value={email} onChange={e=>setEmail(e.target.value)} placeholder="you@example.com" type="email" onKeyDown={e=>e.key==="Enter"&&submit()}
+              style={{background:"#1a1a1a",border:"1px solid #2a2a2a",borderRadius:10,color:"#fff",fontSize:15,padding:"11px 14px",outline:"none",width:"100%"}}/>
+          </div>
+          <div style={{display:"flex",flexDirection:"column",gap:6}}>
+            <label style={{fontSize:13,color:"#666",fontWeight:500}}>Пароль</label>
+            <input value={password} onChange={e=>setPassword(e.target.value)} placeholder="••••••••" type="password" onKeyDown={e=>e.key==="Enter"&&submit()}
+              style={{background:"#1a1a1a",border:"1px solid #2a2a2a",borderRadius:10,color:"#fff",fontSize:15,padding:"11px 14px",outline:"none",width:"100%"}}/>
+          </div>
+          {error&&<div style={{fontSize:13,color:"#f55",background:"#2a0a0a",border:"1px solid #5a1a1a",borderRadius:8,padding:"9px 12px"}}>{error}</div>}
+          <button onClick={submit} disabled={loading}
+            style={{background:loading?"#1a2a4a":"#2563eb",color:"#fff",border:"none",borderRadius:10,fontSize:15,fontWeight:600,padding:"12px",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
+            {loading?<><div style={{width:16,height:16,border:"2px solid #fff4",borderTopColor:"#fff",borderRadius:"50%",animation:"spin .7s linear infinite"}}/>Завантаження...</>:mode==="login"?"Увійти →":"Зареєструватись →"}
+          </button>
+          <div style={{textAlign:"center",fontSize:13,color:"#555"}}>
+            {mode==="login"?"Немає акаунту? ":"Вже є акаунт? "}
+            <span onClick={()=>{setMode(mode==="login"?"register":"login");setError("");}} style={{color:"#2563eb",cursor:"pointer"}}>
+              {mode==="login"?"Зареєструватись":"Увійти"}
+            </span>
+          </div>
+          {mode==="login"&&<div style={{borderTop:"1px solid #1e1e1e",paddingTop:12,fontSize:12,color:"#444",textAlign:"center"}}>
+            Адмін: <span style={{color:"#555",fontFamily:"'Fira Code',monospace"}}>arj@admin.com</span> / <span style={{color:"#555",fontFamily:"'Fira Code',monospace"}}>admin123</span>
+          </div>}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function CodeEditor({onClose}){
+  const [code,setCode]=useState(`// Редактор коду — тільки для адміна\n// Тут ти можеш змінювати сайт`);
+  const [saved,setSaved]=useState(false);
+  function save(){setSaved(true);setTimeout(()=>setSaved(false),2000);}
+  return(
+    <div style={{position:"fixed",inset:0,zIndex:200,background:"rgba(0,0,0,0.85)",display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
+      <div style={{width:"100%",maxWidth:800,maxHeight:"88vh",background:"#0f0f0f",border:"1px solid #222",borderRadius:16,display:"flex",flexDirection:"column",overflow:"hidden"}}>
+        <div style={{padding:"14px 20px",borderBottom:"1px solid #1a1a1a",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+          <div style={{display:"flex",alignItems:"center",gap:8}}>
+            <div style={{width:12,height:12,borderRadius:"50%",background:"#f55"}}/>
+            <div style={{width:12,height:12,borderRadius:"50%",background:"#fa0"}}/>
+            <div style={{width:12,height:12,borderRadius:"50%",background:"#0c0"}}/>
+            <span style={{marginLeft:10,fontSize:13,color:"#555",fontFamily:"'Fira Code',monospace"}}>index.html</span>
+          </div>
+          <div style={{display:"flex",gap:8}}>
+            <button onClick={save} style={{background:saved?"#052e16":"#2563eb",color:saved?"#4ade80":"#fff",border:"none",borderRadius:8,fontSize:13,fontWeight:500,padding:"7px 18px",cursor:"pointer"}}>{saved?"✓ Збережено":"Зберегти"}</button>
+            <button onClick={onClose} style={{background:"#1a1a1a",color:"#666",border:"1px solid #2a2a2a",borderRadius:8,fontSize:13,padding:"7px 12px",cursor:"pointer"}}>✕</button>
+          </div>
+        </div>
+        <textarea value={code} onChange={e=>setCode(e.target.value)}
+          style={{flex:1,background:"transparent",border:"none",color:"#ccc",fontFamily:"'Fira Code',monospace",fontSize:13,padding:20,outline:"none",resize:"none",lineHeight:1.8,minHeight:420}}/>
+      </div>
+    </div>
+  );
+}
+
+function ChatApp({user,onLogout}){
+  const [chatName,setChatName]=useState(null);
+  const [nameInput,setNameInput]=useState("");
+  const [showBadTime,setShowBadTime]=useState(false);
+  const [showCode,setShowCode]=useState(false);
+  const [messages,setMessages]=useState([]);
+  const [input,setInput]=useState("");
+  const [loading,setLoading]=useState(false);
+  const [history,setHistory]=useState([]);
+  const chatRef=useRef(null);
+  const taRef=useRef(null);
+  const isSans=n=>n?.trim().toLowerCase()==="sans";
+
+  function startChat(name){
+    const g=isSans(name)?"* ...\nso. you named it after me.\nthat's... interesting.":"Привіт! Чим можу допомогти?";
+    setMessages([{role:"ai",text:g,id:Date.now()}]);
+    setHistory([{role:"assistant",content:g}]);
+  }
+  function handleStart(){
+    if(!nameInput.trim())return;
+    const n=nameInput.trim();
+    setChatName(n);
+    if(isSans(n)){setShowBadTime(true);return;}
+    startChat(n);
+  }
+  useEffect(()=>{if(chatRef.current)chatRef.current.scrollTop=chatRef.current.scrollHeight;},[messages,loading]);
+
+  async function send(){
+    const text=input.trim();
+    if(!text||loading)return;
+    setInput("");setLoading(true);
+    if(taRef.current)taRef.current.style.height="auto";
+    setMessages(prev=>[...prev,{role:"user",text,id:Date.now()}]);
+    const nh=[...history,{role:"user",content:text}];
+    try{
+      const r=await fetch("https://api.anthropic.com/v1/messages",{
+        method:"POST",
+        headers:{"Content-Type":"application/json","anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
+        body:JSON.stringify({
+          model:"claude-sonnet-4-20250514",max_tokens:1000,
+          system:isSans(chatName)
+            ?`You are Sans from Undertale. Speak lowercase, mysterious, brief. Bone puns. Reply in same language as user.`
+            :`You are a helpful AI assistant. Reply in same language as user (Russian/Ukrainian). Be friendly and concise. Understand slang: пр/прив=привет, хай=hi, ок=okay, пон=понял, хз=не знаю, кста=кстати, норм=нормально, лол/кек=смешно, го=давай, жиза=relatable, топ=отлично, бро=друг, спс=спасибо, неа=нет, ага=да, щас=сейчас, зашквар=кринж, орнул=смеялся. Mirror user tone.`,
+          messages:nh.slice(-20),
+        }),
+      });
+      const d=await r.json();
+      const rep=d.content?.map(b=>b.text||"").join("")||"...";
+      setHistory([...nh,{role:"assistant",content:rep}]);
+      setMessages(prev=>[...prev,{role:"ai",text:rep,id:Date.now()+1}]);
+    }catch{
+      setMessages(prev=>[...prev,{role:"ai",text:"Помилка. Спробуй ще раз.",id:Date.now()+1,error:true}]);
+    }
+    setLoading(false);
+    taRef.current?.focus();
+  }
+
+  if(showBadTime)return<BadTimeScreen onEnd={()=>{setShowBadTime(false);startChat(chatName);}}/>;
+
+  return(
+    <div style={{height:"100vh",display:"flex",flexDirection:"column",background:"#0a0a0a"}}>
+      {showCode&&user.isAdmin&&<CodeEditor onClose={()=>setShowCode(false)}/>}
+      <div style={{padding:"12px 20px",borderBottom:"1px solid #141414",background:"#0d0d0d",display:"flex",alignItems:"center",gap:12,flexShrink:0}}>
+        <div style={{fontSize:17,fontWeight:700,letterSpacing:-0.5}}>arj<span style={{color:"#2563eb"}}>.</span>chat</div>
+        {chatName&&<><div style={{width:1,height:16,background:"#222"}}/><div style={{fontSize:14,color:"#555"}}>{chatName}{isSans(chatName)&&" 💀"}</div></>}
+        <div style={{marginLeft:"auto",display:"flex",alignItems:"center",gap:8}}>
+          {user.isAdmin&&<button onClick={()=>setShowCode(true)} style={{background:"#141414",border:"1px solid #1e1e1e",borderRadius:8,color:"#666",fontSize:12,padding:"6px 12px",cursor:"pointer"}}>✏️ Код</button>}
+          <div style={{display:"flex",alignItems:"center",gap:8,background:"#141414",border:"1px solid #1e1e1e",borderRadius:8,padding:"6px 12px"}}>
+            <span style={{fontSize:14}}>{user.isAdmin?"👑":"👤"}</span>
+            <span style={{fontSize:13,color:"#888"}}>{user.name}</span>
+            <span onClick={onLogout} style={{fontSize:11,color:"#333",cursor:"pointer",marginLeft:4}}>✕</span>
+          </div>
+        </div>
+      </div>
+      {!chatName?(
+        <div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",padding:24}}>
+          <div style={{width:"100%",maxWidth:440,animation:"fadeUp .3s ease"}}>
+            <div style={{fontSize:24,fontWeight:600,marginBottom:6}}>Привіт, {user.name}! 👋</div>
+            <div style={{fontSize:14,color:"#555",marginBottom:24}}>Введи назву нового чату</div>
+            <div style={{display:"flex",gap:10}}>
+              <input autoFocus value={nameInput} onChange={e=>setNameInput(e.target.value)} onKeyDown={e=>e.key==="Enter"&&handleStart()} placeholder="Назва чату..."
+                style={{flex:1,background:"#141414",border:"1px solid #1e1e1e",borderRadius:10,color:"#fff",fontSize:15,padding:"12px 16px",outline:"none"}}/>
+              <button onClick={handleStart} style={{background:"#2563eb",color:"#fff",border:"none",borderRadius:10,fontSize:16,fontWeight:600,padding:"12px 20px",cursor:"pointer"}}>→</button>
+            </div>
+            <div style={{marginTop:32,padding:14,background:"#0f0f0f",border:"1px solid #1a1a1a",borderRadius:12,fontSize:13,color:"#444",lineHeight:1.7}}>
+              💡 Назви чат <span style={{color:"#f55",fontFamily:"'Fira Code',monospace"}}>sans</span> для пасхалки
+            </div>
+          </div>
+        </div>
+      ):(
+        <>
+          <div ref={chatRef} style={{flex:1,overflowY:"auto",padding:"20px",display:"flex",flexDirection:"column",gap:12}}>
+            {messages.map(msg=>(
+              <div key={msg.id} style={{display:"flex",justifyContent:msg.role==="user"?"flex-end":"flex-start",animation:"fadeUp .2s ease"}}>
+                <div style={{maxWidth:"72%",padding:"10px 14px",borderRadius:msg.role==="user"?"18px 18px 4px 18px":"18px 18px 18px 4px",background:msg.role==="user"?"#2563eb":msg.error?"#2a1a1a":"#141414",border:msg.error?"1px solid #f33":"none",fontSize:15,lineHeight:1.6,color:"#fff",fontFamily:isSans(chatName)&&msg.role==="ai"?"'Fira Code',monospace":"'Inter',sans-serif",whiteSpace:"pre-wrap",wordBreak:"break-word"}}>
+                  {msg.text}
+                </div>
+              </div>
+            ))}
+            {loading&&(
+              <div style={{display:"flex"}}>
+                <div style={{padding:"12px 16px",borderRadius:"18px 18px 18px 4px",background:"#141414",display:"flex",gap:5,alignItems:"center"}}>
+                  {[0,1,2].map(i=><div key={i} style={{width:7,height:7,borderRadius:"50%",background:"#444",animation:`dot .9s ${i*.2}s ease-in-out infinite`}}/>)}
+                </div>
+              </div>
+            )}
+          </div>
+          <div style={{padding:"12px 16px",borderTop:"1px solid #141414",background:"#0d0d0d",display:"flex",gap:10,alignItems:"flex-end",flexShrink:0}}>
+            <textarea ref={taRef} rows={1} value={input}
+              onChange={e=>{setInput(e.target.value);e.target.style.height="auto";e.target.style.height=Math.min(e.target.scrollHeight,120)+"px";}}
+              onKeyDown={e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();send();}}}
+              placeholder="Напиши повідомлення..."
+              style={{flex:1,background:"#141414",border:"1px solid #1e1e1e",borderRadius:12,color:"#fff",fontSize:15,padding:"10px 14px",outline:"none",resize:"none",lineHeight:1.5,minHeight:42,maxHeight:120,overflow:"auto"}}/>
+            <button onClick={send} disabled={!input.trim()||loading}
+              style={{width:42,height:42,borderRadius:"50%",border:"none",flexShrink:0,background:input.trim()&&!loading?"#2563eb":"#1a1a1a",color:input.trim()&&!loading?"#fff":"#333",cursor:input.trim()&&!loading?"pointer":"default",fontSize:18,display:"flex",alignItems:"center",justifyContent:"center",transition:"background .2s"}}>↑</button>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+function App(){
+  const [user,setUser]=useState(null);
+  if(!user)return<AuthScreen onLogin={setUser}/>;
+  return<ChatApp user={user} onLogout={()=>setUser(null)}/>;
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script>
+</body>
+</html>
