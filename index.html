@@ -30,7 +30,7 @@ input,textarea,button{font-family:'Inter',sans-serif}
 const {useState,useEffect,useRef} = React;
 
 const USERS = [
-  {id:1,email:"arj@admin.com",name:"ARJ",password:"admin123",isAdmin:true},
+  {id:1,username:"arj",name:"ARJ",password:"admin123",isAdmin:true},
 ];
 
 function BadTimeScreen({onEnd}){
@@ -64,7 +64,7 @@ function BadTimeScreen({onEnd}){
 
 function AuthScreen({onLogin}){
   const [mode,setMode]=useState("login");
-  const [email,setEmail]=useState("");
+  const [username,setUsername]=useState("");
   const [name,setName]=useState("");
   const [password,setPassword]=useState("");
   const [error,setError]=useState("");
@@ -74,15 +74,15 @@ function AuthScreen({onLogin}){
     setError("");setLoading(true);
     setTimeout(()=>{
       if(mode==="login"){
-        const u=USERS.find(u=>u.email===email&&u.password===password);
+        const u=USERS.find(u=>u.username===username.toLowerCase()&&u.password===password);
         if(u)onLogin(u);
-        else setError("Невірний email або пароль");
+        else setError("Невірний логін або пароль");
       } else {
         if(!name.trim()){setError("Введи ім'я");setLoading(false);return;}
-        if(!email.includes("@")){setError("Невірний email");setLoading(false);return;}
+        if(!username.trim()||username.length<3){setError("Логін мінімум 3 символи");setLoading(false);return;}
         if(password.length<6){setError("Пароль мінімум 6 символів");setLoading(false);return;}
-        if(USERS.find(u=>u.email===email)){setError("Email вже зайнятий");setLoading(false);return;}
-        const nu={id:Date.now(),email,name,password,isAdmin:false};
+        if(USERS.find(u=>u.username===username.toLowerCase())){setError("Логін вже зайнятий");setLoading(false);return;}
+        const nu={id:Date.now(),username:username.toLowerCase(),name,password,isAdmin:false};
         USERS.push(nu);
         onLogin(nu);
       }
@@ -107,8 +107,8 @@ function AuthScreen({onLogin}){
             </div>
           )}
           <div style={{display:"flex",flexDirection:"column",gap:6}}>
-            <label style={{fontSize:13,color:"#666",fontWeight:500}}>Email</label>
-            <input value={email} onChange={e=>setEmail(e.target.value)} placeholder="you@example.com" type="email" onKeyDown={e=>e.key==="Enter"&&submit()}
+            <label style={{fontSize:13,color:"#666",fontWeight:500}}>Логін</label>
+            <input value={username} onChange={e=>setUsername(e.target.value)} placeholder="твій_логін" onKeyDown={e=>e.key==="Enter"&&submit()}
               style={{background:"#1a1a1a",border:"1px solid #2a2a2a",borderRadius:10,color:"#fff",fontSize:15,padding:"11px 14px",outline:"none",width:"100%"}}/>
           </div>
           <div style={{display:"flex",flexDirection:"column",gap:6}}>
@@ -127,9 +127,6 @@ function AuthScreen({onLogin}){
               {mode==="login"?"Зареєструватись":"Увійти"}
             </span>
           </div>
-          {mode==="login"&&<div style={{borderTop:"1px solid #1e1e1e",paddingTop:12,fontSize:12,color:"#444",textAlign:"center"}}>
-            Адмін: <span style={{color:"#555",fontFamily:"'Fira Code',monospace"}}>arj@admin.com</span> / <span style={{color:"#555",fontFamily:"'Fira Code',monospace"}}>admin123</span>
-          </div>}
         </div>
       </div>
     </div>
@@ -137,7 +134,7 @@ function AuthScreen({onLogin}){
 }
 
 function CodeEditor({onClose}){
-  const [code,setCode]=useState(`// Редактор коду — тільки для адміна\n// Тут ти можеш змінювати сайт`);
+  const [code,setCode]=useState(`// Редактор коду — тільки для адміна`);
   const [saved,setSaved]=useState(false);
   function save(){setSaved(true);setTimeout(()=>setSaved(false),2000);}
   return(
