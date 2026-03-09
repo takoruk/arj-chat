@@ -167,7 +167,6 @@ function ChatApp({user,onLogout}){
   const [messages,setMessages]=useState([]);
   const [input,setInput]=useState("");
   const [loading,setLoading]=useState(false);
-  const [history,setHistory]=useState([]);
   const chatRef=useRef(null);
   const taRef=useRef(null);
   const isSans=n=>n?.trim().toLowerCase()==="sans";
@@ -175,7 +174,6 @@ function ChatApp({user,onLogout}){
   function startChat(name){
     const g=isSans(name)?"* ...\nso. you named it after me.\nthat's... interesting.":"Привіт! Чим можу допомогти?";
     setMessages([{role:"ai",text:g,id:Date.now()}]);
-    setHistory([{role:"assistant",content:g}]);
   }
   function handleStart(){
     if(!nameInput.trim())return;
@@ -186,34 +184,54 @@ function ChatApp({user,onLogout}){
   }
   useEffect(()=>{if(chatRef.current)chatRef.current.scrollTop=chatRef.current.scrollHeight;},[messages,loading]);
 
-  async function send(){
+  function send(){
     const text=input.trim();
     if(!text||loading)return;
     setInput("");setLoading(true);
     if(taRef.current)taRef.current.style.height="auto";
     setMessages(prev=>[...prev,{role:"user",text,id:Date.now()}]);
-    const nh=[...history,{role:"user",content:text}];
-    try{
-      const r=await fetch("https://api.anthropic.com/v1/messages",{
-        method:"POST",
-        headers:{"Content-Type":"application/json","anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
-        body:JSON.stringify({
-          model:"claude-sonnet-4-20250514",max_tokens:1000,
-          system:isSans(chatName)
-            ?`You are Sans from Undertale. Speak lowercase, mysterious, brief. Bone puns. Reply in same language as user.`
-            :`You are a helpful AI assistant. Reply in same language as user (Russian/Ukrainian). Be friendly and concise. Understand slang: пр/прив=привет, хай=hi, ок=okay, пон=понял, хз=не знаю, кста=кстати, норм=нормально, лол/кек=смешно, го=давай, жиза=relatable, топ=отлично, бро=друг, спс=спасибо, неа=нет, ага=да, щас=сейчас, зашквар=кринж, орнул=смеялся. Mirror user tone.`,
-          messages:nh.slice(-20),
-        }),
-      });
-      const d=await r.json();
-      const rep=d.content?.map(b=>b.text||"").join("")||"...";
-      setHistory([...nh,{role:"assistant",content:rep}]);
+    const t2=text.toLowerCase();
+    const sans=isSans(chatName);
+    setTimeout(()=>{
+      let rep="";
+      if(sans){
+        const sansReplies=[
+          "* heh. цікаво.",
+          "* ...\nну. ти знаєш хто я.",
+          "* не думав що ти напишеш це.\nале добре.",
+          "* залишайся. поговоримо.",
+          "* у мене є відчуття... що ти вже знаєш відповідь.",
+          "* heh heh heh.",
+          "* ти сильніший ніж думаєш.\nможливо.",
+          "* кетчуп закінчився. це трагедія.",
+          "* ...\nя просто скелет.\nале навіть скелети слухають.",
+          "* не поспішай.\nу нас є час.",
+        ];
+        rep=sansReplies[Math.floor(Math.random()*sansReplies.length)];
+      } else {
+        if(t2.match(/привіт|привет|хай|хей|пр|прив|hello|hi|вітаю/))
+          rep=["Привіт! 👋 Як справи?","Хай! Чим можу допомогти?","Привіт! Радий тебе бачити 😊"][Math.floor(Math.random()*3)];
+        else if(t2.match(/як справи|як ти|як діла|що нового/))
+          rep=["Все супер, дякую! А у тебе?","Норм, дякую що питаєш 😄","Відмінно! Що цікавого в тебе?"][Math.floor(Math.random()*3)];
+        else if(t2.match(/допоможи|помоги|допомога|help/))
+          rep=["Звичайно! Розкажи що сталося 👂","Я тут, говори — допоможу чим зможу!","Слухаю! Що потрібно?"][Math.floor(Math.random()*3)];
+        else if(t2.match(/дякую|спасибо|спс|thanks|дяки/))
+          rep=["Будь ласка! 😊","Не за що!","Завжди радий допомогти!"][Math.floor(Math.random()*3)];
+        else if(t2.match(/поки|бувай|пока|до побачення|bye/))
+          rep=["Бувай! 👋","До зустрічі!","Поки! Заходь ще 😊"][Math.floor(Math.random()*3)];
+        else if(t2.match(/лол|кек|ха|😂|🤣|смішно|смешно/))
+          rep=["😄 ха!","Теж смішно 😂","Жиза 💀"][Math.floor(Math.random()*3)];
+        else if(t2.match(/норм|нормально|окей|ок|добре|хорошо/))
+          rep=["Чудово! 👍","Ок, розумію!","Топ!"][Math.floor(Math.random()*3)];
+        else {
+          const defaults=["Цікаво! Розкажи більше 🤔","Зрозумів! Що далі?","Хм... це думка 💭","Ага, слухаю!","Норм тема!","Окей, і що думаєш про це?"];
+          rep=defaults[Math.floor(Math.random()*defaults.length)];
+        }
+      }
       setMessages(prev=>[...prev,{role:"ai",text:rep,id:Date.now()+1}]);
-    }catch{
-      setMessages(prev=>[...prev,{role:"ai",text:"Помилка. Спробуй ще раз.",id:Date.now()+1,error:true}]);
-    }
-    setLoading(false);
-    taRef.current?.focus();
+      setLoading(false);
+      taRef.current?.focus();
+    },600+Math.random()*400);
   }
 
   if(showBadTime)return<BadTimeScreen onEnd={()=>{setShowBadTime(false);startChat(chatName);}}/>;
@@ -253,7 +271,7 @@ function ChatApp({user,onLogout}){
           <div ref={chatRef} style={{flex:1,overflowY:"auto",padding:"20px",display:"flex",flexDirection:"column",gap:12}}>
             {messages.map(msg=>(
               <div key={msg.id} style={{display:"flex",justifyContent:msg.role==="user"?"flex-end":"flex-start",animation:"fadeUp .2s ease"}}>
-                <div style={{maxWidth:"72%",padding:"10px 14px",borderRadius:msg.role==="user"?"18px 18px 4px 18px":"18px 18px 18px 4px",background:msg.role==="user"?"#2563eb":msg.error?"#2a1a1a":"#141414",border:msg.error?"1px solid #f33":"none",fontSize:15,lineHeight:1.6,color:"#fff",fontFamily:isSans(chatName)&&msg.role==="ai"?"'Fira Code',monospace":"'Inter',sans-serif",whiteSpace:"pre-wrap",wordBreak:"break-word"}}>
+                <div style={{maxWidth:"72%",padding:"10px 14px",borderRadius:msg.role==="user"?"18px 18px 4px 18px":"18px 18px 18px 4px",background:msg.role==="user"?"#2563eb":"#141414",fontSize:15,lineHeight:1.6,color:"#fff",fontFamily:isSans(chatName)&&msg.role==="ai"?"'Fira Code',monospace":"'Inter',sans-serif",whiteSpace:"pre-wrap",wordBreak:"break-word"}}>
                   {msg.text}
                 </div>
               </div>
